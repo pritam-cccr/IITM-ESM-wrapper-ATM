@@ -1,6 +1,9 @@
 #!/bin/bash
 # DESCRIPTION: Wrapper script for IITM_ESM diagnostics with optional model comparison
-# Last updated: December 2024
+# Last updated: January 2025
+# Author: [Pritam Das Mahapatra]  
+# Copyright (C) 2025 CCCR, IITM. All rights reserved.
+
 
 ######################################### USER INPUT SECTION ##########################################
 
