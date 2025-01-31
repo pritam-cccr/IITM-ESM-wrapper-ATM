@@ -13,15 +13,6 @@ fi
 # Source user inputs from the external file
 source ./user_inputs_atm.sh
 
-# Check if output directory variable is set
-if [[ -z "$output_dir" ]]; then
-    echo "Error: Output directory variable 'output_dir' not set in user_inputs_atm.sh"
-    exit 1
-fi
-
-# Initialize output directory
-mkdir -p "$output_dir"
-echo "Output files will be saved in $output_dir"
 # Error handling and cleanup
 function check_error {
     if [ $? -ne 0 ]; then
@@ -29,6 +20,7 @@ function check_error {
         exit 1
     fi
 }
+
 
 function cleanup {
     echo "Cleaning up temporary files..."
@@ -38,7 +30,7 @@ trap cleanup EXIT
 
 # Ensure necessary arguments are provided
 required_vars=(
-    diagnostic_type plev_variables no_plev_variables netcdf_dir_model1 start_year_model1 end_year_model1
+    diagnostic_type plev_variables no_plev_variables plot_dir netcdf_dir_model1 start_year_model1 end_year_model1
     season projection lat_range lon_range obs_data_dir start_year_obs end_year_obs
 )
 
@@ -68,6 +60,7 @@ fi
 echo "Selected diagnostic type: $diagnostic_type"
 echo "Pressure-level variables: ${plev_variables_array[@]}"
 echo "Non-pressure-level variables: ${no_plev_variables_array[@]}"
+echo "PLOT Directory:$plot_dir"
 echo "Season: $season"
 echo "Projection: $projection"
 echo "Latitude range: $lat_range"
@@ -77,6 +70,10 @@ if [ "$use_second_model" = true ]; then
     echo "Using model 2 data directory: $netcdf_dir_model2"
 fi
 
+# Define output directory
+output_dir="./output_data"
+mkdir -p "$output_dir"
+echo "Output files will be saved in $output_dir"
 
 
 
@@ -180,19 +177,76 @@ fi
 
 
 echo "Plotting completed successfully."
-
-
-
 echo "Processing and plotting completed successfully. Outputs are saved in $output_dir."
+# Load user inputs
 
-echo "COPY ALL PLOTS into PLOT folder"
-mkdir -p PLOT
-find . -type f \( -iname "*.png" -o -iname "*.pdf" \) -exec cp {} PLOT/ \;
+source ./user_inputs_atm.sh
 
-# Remove all .nc files from current and subdirectories
-#find . -type f -name "*.nc" -exec rm -f {} \;
-#
-#echo "All .nc files have been removed from the current and subdirectories."
+echo "COPYING ALL PLOTS INTO PLOT DIRECTORY: $plot_dir"
 
+# Ensure the plot directory exists
+mkdir -p "$plot_dir"
+
+# Find and copy all .png and .pdf plots into $plot_dir
+find . -type f \( -iname "*.png" -o -iname "*.pdf" \) -exec cp {} "$plot_dir/" \;
+
+echo "All plots successfully copied to $plot_dir."
+
+
+######################## FINAL OUTPUT MANAGEMENT##############
+######################################## CLEANUP ##########################################
+
+echo "Do you want to delete all processed files? (y/n)"
+read -r user_input
+
+if [[ "$user_input" == "y" || "$user_input" == "Y" ]]; then
+    echo "Deleting all processed files..."
+
+    # Remove intermediate and final processed NetCDF files
+    rm -f "$output_dir"/*.nc
+    rm -f "$output_dir"/*.nc
+    rm -rf *.nc
+    rm -f temp_var_*.nc merged_*.nc annual_mean_*.nc 2>/dev/null || true
+
+    echo "All processed files deleted from $output_dir."
+else
+    echo "Cleanup skipped. Processed files are retained in $output_dir."
+fi
+######################################### CREATE HTML ##########################################
+
+echo "Generating HTML file with plot previews..."
+
+# Define the image details file
+img_list_file="${plot_dir}/image_list.txt"
+output_html="${plot_dir}/plots_overview.html"
+
+# Generate the list of plots with captions
+echo "Generating image list..."
+rm -f "$img_list_file"  # Remove existing file if present
+
+# Add each plot to the image list
+for img in "$plot_dir"/*.png; do
+    echo "$img" >> "$img_list_file"  # Image file path
+    echo "$(basename "$img")" >> "$img_list_file"  # Use file name as caption
+done
+
+# Check if any images were added
+if [[ ! -s "$img_list_file" ]]; then
+    echo "No images found for HTML generation."
+else
+    # Run the Python script to generate the HTML
+    python create_plot_html.py "$img_list_file" "$output_html"
+    if [[ $? -eq 0 ]]; then
+        echo "HTML file created successfully: $output_html"
+    else
+        echo "Error: Failed to generate HTML file."
+    fi
+fi
+
+######################################## FINAL OUTPUT MANAGEMENT ##########################################
+
+echo "Processing, plotting, and HTML generation completed successfully."
+
+echo "Script execution completed."
 
 
