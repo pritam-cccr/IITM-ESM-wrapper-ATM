@@ -124,7 +124,7 @@ season="JJAS"    [** DJF, MAM, JJA, SON, JJAS**]
 
 ## License
 
-**Copyright (C) 2025 CCCR, IITM. All rights reserved.** This software is intended for research purposes within IITM and affiliated institutions.
+**Copyright (C) 2025 CCCR, IITM. All rights reserved.** This software is intended for research purposes within CCCR-IITM.
 
 ## Author
 **Pritam Das Mahapatra, CCCR, IITM**
