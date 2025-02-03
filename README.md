@@ -32,8 +32,11 @@ It supports multiple models and observational datasets, ensuring efficient workf
    ```
 2. Ensure dependencies are installed:
    ```bash
-   sudo apt-get install cdo ncl-ncarg python3
-   pip install netCDF4 matplotlib numpy xarray cartopy
+   
+   # Install required libraries using pip
+   pip install numpy xarray matplotlib cartopy netCDF4
+   conda install -c conda-forge cartopy
+
    ```
 
 ## Usage
@@ -43,7 +46,9 @@ It supports multiple models and observational datasets, ensuring efficient workf
 Before any execution, give execution permission:
 
 ```bash
-chmod +x *
+chmod +x *.sh
+chmod +x *.py
+chmod +x *.ncl
 ```
 
 ### **Basic Execution**
