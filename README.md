@@ -36,6 +36,8 @@ It supports multiple models and observational datasets, ensuring efficient workf
    # Install required libraries using pip
    pip install numpy xarray matplotlib cartopy netCDF4
    conda install -c conda-forge cartopy
+   conda install -c conda-forge weasyprint
+
 
    ```
 
