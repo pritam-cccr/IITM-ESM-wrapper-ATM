@@ -61,7 +61,7 @@ To run the wrapper script:
 
 ### **Processing Specific Variables**
 
-You can process specific variables such as `tas`, `pr`, `slp`, `ua`, `va`, `ta`, `hght`, `rsdt`, `rlut`, `rsut`. Example:
+      You can process specific variables such as `tas`, `pr`, `slp`, `ua`, `va`, `ta`, `hght`, `rsdt`, `rlut`, `rsut`,'evspsbl'. Example:
 
 ```bash
 ./IITM-ESM_WRAPPER_ATM.sh --variable tas
@@ -127,8 +127,7 @@ season="JJAS"    [** DJF, MAM, JJA, SON, JJAS**]
 **Copyright (C) 2025 CCCR, IITM. All rights reserved.** This software is intended for research purposes within IITM and affiliated institutions.
 
 ## Author
-
-**CCCR, IITM**
+**Pritam Das Mahapatra, CCCR, IITM**
 
 ## Contact
 
