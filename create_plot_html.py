@@ -1,4 +1,14 @@
-# Praveen V
+# ==============================================================================
+#  Copyright (C) 2025 Centre for Climate Change Research (CCCR), IITM
+#
+#  This script is part of the CCCR IITM_ESM diagnostics system.
+#
+#  Author: Praveen V; Pritam Das Mahapatra
+#  Date: January 2025
+#  Version: 1.0
+#
+#==============================================================================
+
 import sys
 import os
 

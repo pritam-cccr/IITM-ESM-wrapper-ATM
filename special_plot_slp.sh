@@ -1,6 +1,13 @@
 #!/bin/bash
-# DESCRIPTION: Specialized plotting script for SLP (surface air temperature)
-# Last updated: November 2024
+# DESCRIPTION: Specialized plotting script for SLP (surface air pressure)
+# ==============================================================================
+# Copyright (C) 2025 Centre for Climate Change Research (CCCR), IITM
+#
+# This script is part of the CCCR IITM_ESM diagnostics system.
+#
+# Author: [Pritam Das Mahapatra]
+# Date: January 2025
+# ==============================================================================
 
 # Function for error handling
 function check_error {

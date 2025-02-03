@@ -1,7 +1,13 @@
 #!/bin/bash
 # DESCRIPTION: Specialized plotting script for TAS (surface air temperature)
-# Last updated: November 2024
-
+# ==============================================================================
+# Copyright (C) 2025 Centre for Climate Change Research (CCCR), IITM
+#
+# This script is part of the CCCR IITM_ESM diagnostics system.
+#
+# Author: [Pritam Das Mahapatra]
+# Date: January 2025
+# ==============================================================================
 # Function for error handling
 function check_error {
     if [ $? -ne 0 ]; then

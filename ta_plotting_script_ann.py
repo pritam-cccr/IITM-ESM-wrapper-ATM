@@ -53,20 +53,18 @@ print("=== INPUT ARGUMENTS ===")
 print(f"Model 1 Annual Mean: {model1_annual}")
 print(f"Model 2 Annual Mean: {model2_annual if model2_annual else 'Not provided'}")
 print(f"Observation Annual: {obs_annual}")
+print(f"bias1 Annual: {bias1_annual}")
+print(f"bias2 Annual: {bias2_annual}")
+print(f"bias3 Annual: {bias3_annual}")
 print(f"Projection: {projection}")
 print(f"Latitude Range: {lat_min} to {lat_max}")
 print(f"Longitude Range: {lon_min} to {lon_max}")
 print(f"Longitude Range: {var} and {obs_var}")
 print("========================")
 
-# Utility functions
-def apply_variable_transformations(data, var, obs_var):
-    """Apply unit conversions for specific variables."""
-    if var == "tas" and obs_var == "t2m":
-        return data - 273.15  # Convert Kelvin to Celsius
-    return data
 
-def create_levels(min_val, max_val, step=2):
+
+def create_levels(min_val, max_val, step=2.5):
     """Generate evenly spaced levels."""
     return np.arange(min_val, max_val + step, step)
 
@@ -95,9 +93,9 @@ def plot_platecarree(ax, data, lon_name, lat_name, levels, cmap, lat_min, lat_ma
     return contour
 
 def plot_robinson(ax, data, lon_name, lat_name, levels, cmap, lat_min, lat_max, lon_min, lon_max, title):
-    contour = ax.contourf(data[lon_name], data[lat_name], data, transform=ccrs.PlateCarree(central_longitude=0), levels=levels, cmap=cmap, extend="both")
+    contour = ax.contourf(data[lon_name], data[lat_name], data, transform=ccrs.PlateCarree(), levels=levels, cmap=cmap, extend="both")
     ax.coastlines()
-    
+    ax.add_feature(cfeature.BORDERS)
     gl = ax.gridlines(draw_labels=True, linewidth=1, color="gray", alpha=0.5, linestyle="--")
     gl.xformatter = LongitudeFormatter()
     gl.yformatter = LatitudeFormatter()
@@ -107,8 +105,9 @@ def plot_robinson(ax, data, lon_name, lat_name, levels, cmap, lat_min, lat_max, 
     return contour
 
 def plot_polar_stereo(ax, data, lon_name, lat_name, levels, cmap, lat_min, lat_max, lon_min, lon_max, title):
-    contour = ax.contourf(data[lon_name], data[lat_name], data, transform=ccrs.PlateCarree(central_longitude=180), levels=levels, cmap=cmap, extend="both")
+    contour = ax.contourf(data[lon_name], data[lat_name], data, transform=ccrs.PlateCarree(), levels=levels, cmap=cmap, extend="both")
     ax.coastlines()
+    ax.add_feature(cfeature.BORDERS)
     gl = ax.gridlines(draw_labels=True, linewidth=1, color="gray", alpha=0.5, linestyle="--")
     gl.xformatter = LongitudeFormatter()
     gl.yformatter = LatitudeFormatter()
@@ -117,30 +116,79 @@ def plot_polar_stereo(ax, data, lon_name, lat_name, levels, cmap, lat_min, lat_m
     ax.set_title(title)
     return contour
 
-# Load datasets
-try:
-    model1_annual_data = xr.open_dataset(model1_annual, decode_times=False)[var].isel(time=0)
-    model2_annual_data = xr.open_dataset(model2_annual, decode_times=False)[var].isel(time=0) if model2_annual else None
-    obs_annual_data = xr.open_dataset(obs_annual, decode_times=False)[obs_var].isel(valid_time=0)
-    bias1_annual_data = xr.open_dataset(bias1_annual, decode_times=False)[var].isel(time=0)
-    bias2_annual_data = xr.open_dataset(bias2_annual, decode_times=False)[var].isel(time=0) if bias2_annual else None
-    bias3_annual_data = xr.open_dataset(bias3_annual, decode_times=False)[var].isel(time=0) if bias3_annual else None
-except Exception as e:
-    print(f"Error loading datasets: {e}")
-    sys.exit(1)
 
-# Apply transformations
-model1_annual_data = apply_variable_transformations(model1_annual_data, var, obs_var)
-obs_annual_data = apply_variable_transformations(obs_annual_data, var, obs_var)
-if model2_annual_data is not None:
-    model2_annual_data = apply_variable_transformations(model2_annual_data, var, obs_var)
+# Utility function for selecting and averaging over pressure levels
+def average_over_levels(dataset, variable, min_plev, max_plev):
+    """
+    Dynamically selects the pressure level dimension and averages the variable.
+    """
+    possible_plev_dims = ["plev", "level", "pressure_level"]
+    plev_dim = next((dim for dim in possible_plev_dims if dim in dataset.dims), None)
+
+    if not plev_dim:
+        print(f"Error: None of the expected pressure level dimensions ({possible_plev_dims}) found in dataset.")
+        print(f"Available dimensions: {list(dataset.dims.keys())}")
+        sys.exit(1)
+
+    if variable not in dataset:
+        print(f"Error: Variable '{variable}' not found in dataset.")
+        print(f"Available variables: {list(dataset.data_vars.keys())}")
+        sys.exit(1)
+
+    return dataset[variable].sel({plev_dim: slice(min_plev, max_plev)}).mean(dim=plev_dim)
+
+# Load and process all datasets
+datasets = {
+    "model1": (model1_annual, var, False),
+    "model2": (model2_annual, var, False),
+    "obs": (obs_annual, obs_var, False),
+    "bias1": (bias1_annual, var, True),
+    "bias2": (bias2_annual, var, True),
+    "bias3": (bias3_annual, var, True)
+}
+
+
+processed_data = {}
+min_plev, max_plev = 600, 200  # Pressure range in hPa
+
+for key, (file_path, variable, is_bias) in datasets.items():
+    if file_path:
+        try:
+            # Open the dataset
+            ds = xr.open_dataset(file_path, decode_times=False)
+
+            # Verify if the variable exists in the dataset
+            if variable not in ds:
+                print(f"Error: Variable '{variable}' not found in {key}. Available variables: {list(ds.data_vars.keys())}")
+                sys.exit(1)
+
+            # Perform pressure level averaging
+            avg_data = average_over_levels(ds, variable, min_plev, max_plev)
+
+            # Eliminate the 'time' or 'valid_time' dimension if it exists
+            if "time" in avg_data.dims:
+                avg_data = avg_data.isel(time=0).squeeze()
+            elif "valid_time" in avg_data.dims:
+                avg_data = avg_data.isel(valid_time=0).squeeze()
+            else:
+                print("No recognized time dimension found in the data.")
+
+            # Skip transformations
+            processed_data[key] = avg_data  # No unit conversion applied
+            print(f"{key} processed successfully. Shape: {processed_data[key].shape}")
+
+        except Exception as e:
+            print(f"Error processing {key}: {e}")
+            sys.exit(1)
+    else:
+        print(f"{key} not provided, skipping.")
 
 # Dynamically identify coordinates
-lon_name = "lon" if "lon" in model1_annual_data.coords else "longitude"
-lat_name = "lat" if "lat" in model1_annual_data.coords else "latitude"
+lon_name = "lon" if "lon" in processed_data["model1"].coords else "longitude"
+lat_name = "lat" if "lat" in processed_data["model1"].coords else "latitude"
 
 # Define levels
-mean_levels = create_levels(-20, 45)  # Adjust range for temperature data
+mean_levels = create_levels(220, 260)  # Adjust range for temperature data
 bias_levels = create_levelsB(-8, 8)  # Adjust for bias range
 
 
@@ -167,39 +215,48 @@ else:
     sys.exit(1)
 
 # Conditional plotting based on the presence of Model 2
-if model2_annual_data is not None:
+if "model2" in processed_data and processed_data["model2"] is not None:
     # Create a 3x2 grid for plotting when Model 2 data is present
     fig, axes = plt.subplots(3, 2, figsize=(15, 18), subplot_kw={"projection": proj})
 
     # Plot Observation Annual Mean
-    contour1 = plot_function(axes[0, 0], obs_annual_data, lon_name, lat_name, mean_levels, mean_cmap,
-                             lat_min, lat_max, lon_min, lon_max, "Observation Annual Mean")
+    contour1 = plot_function(axes[0, 0], processed_data["obs"], lon_name, lat_name, mean_levels, mean_cmap,
+                             lat_min, lat_max, lon_min, lon_max, "Observation Annual Mean (°C)")
     fig.colorbar(contour1, ax=axes[0, 0], orientation='horizontal', pad=0.1, fraction=0.05, shrink=0.8)
 
     # Plot Bias between Model 1 and Model 2
-    contour2 = plot_function(axes[0, 1], bias3_annual_data, lon_name, lat_name, bias_levels, bias_cmap,
-                             lat_min, lat_max, lon_min, lon_max, "Bias (CMIP7 - CMIP6)")
-    fig.colorbar(contour2, ax=axes[0, 1], orientation='horizontal', pad=0.1, fraction=0.05, shrink=0.8)
+    if "bias3" in processed_data and processed_data["bias3"] is not None:
+        contour2 = plot_function(axes[0, 1], processed_data["bias3"], lon_name, lat_name, bias_levels, bias_cmap,
+                                 lat_min, lat_max, lon_min, lon_max, "Bias (CMIP7 - CMIP6)")
+        fig.colorbar(contour2, ax=axes[0, 1], orientation='horizontal', pad=0.1, fraction=0.05, shrink=0.8)
+    else:
+        axes[0, 1].remove()
 
     # Plot Model 1 Annual Mean
-    contour3 = plot_function(axes[1, 0], model1_annual_data, lon_name, lat_name, mean_levels, mean_cmap,
-                             lat_min, lat_max, lon_min, lon_max, "CMIP7 Annual Mean")
+    contour3 = plot_function(axes[1, 0], processed_data["model1"], lon_name, lat_name, mean_levels, mean_cmap,
+                             lat_min, lat_max, lon_min, lon_max, "CMIP7 Annual Mean (K)")
     fig.colorbar(contour3, ax=axes[1, 0], orientation='horizontal', pad=0.1, fraction=0.05, shrink=0.8)
 
     # Plot Model 2 Annual Mean
-    contour4 = plot_function(axes[2, 0], model2_annual_data, lon_name, lat_name, mean_levels, mean_cmap,
-                             lat_min, lat_max, lon_min, lon_max, "CMIP6 Annual Mean")
+    contour4 = plot_function(axes[2, 0], processed_data["model2"], lon_name, lat_name, mean_levels, mean_cmap,
+                             lat_min, lat_max, lon_min, lon_max, "CMIP6 Annual Mean (k)")
     fig.colorbar(contour4, ax=axes[2, 0], orientation='horizontal', pad=0.1, fraction=0.05, shrink=0.8)
 
     # Plot Bias between Model 1 and Observation
-    contour5 = plot_function(axes[1, 1], bias1_annual_data, lon_name, lat_name, bias_levels, bias_cmap,
-                             lat_min, lat_max, lon_min, lon_max, "Bias (CMIP7 - Obs)")
-    fig.colorbar(contour5, ax=axes[1, 1], orientation='horizontal', pad=0.1, fraction=0.05, shrink=0.8)
+    if "bias1" in processed_data and processed_data["bias1"] is not None:
+        contour5 = plot_function(axes[1, 1], processed_data["bias1"], lon_name, lat_name, bias_levels, bias_cmap,
+                                 lat_min, lat_max, lon_min, lon_max, "Bias (CMIP7 - Obs)")
+        fig.colorbar(contour5, ax=axes[1, 1], orientation='horizontal', pad=0.1, fraction=0.05, shrink=0.8)
+    else:
+        axes[2, 0].remove()
 
     # Plot Bias between Model 2 and Observation
-    contour6 = plot_function(axes[2,1 ], bias2_annual_data, lon_name, lat_name, bias_levels, bias_cmap,
-                             lat_min, lat_max, lon_min, lon_max, "Bias (CMIP6 - Obs)")
-    fig.colorbar(contour6, ax=axes[2, 1], orientation='horizontal', pad=0.1, fraction=0.05, shrink=0.8)
+    if "bias2" in processed_data and processed_data["bias2"] is not None:
+        contour6 = plot_function(axes[2, 1], processed_data["bias2"], lon_name, lat_name, bias_levels, bias_cmap,
+                                 lat_min, lat_max, lon_min, lon_max, "Bias (CMIP6 - Obs)")
+        fig.colorbar(contour6, ax=axes[2, 1], orientation='horizontal', pad=0.1, fraction=0.05, shrink=0.8)
+    else:
+        axes[2, 1].remove()
 
     # Save plot
     output_file = os.path.join(output_dir, f"{var}_annual_comparison_with_model2_{projection}.png")
@@ -209,22 +266,27 @@ else:
     fig, axes = plt.subplots(1, 3, figsize=(18, 6), subplot_kw={"projection": proj})
 
     # Plot Observation Annual Mean
-    contour1 = plot_function(axes[0], obs_annual_data, lon_name, lat_name, mean_levels, mean_cmap,
-                             lat_min, lat_max, lon_min, lon_max, "Observation Annual Mean")
+    contour1 = plot_function(axes[0], processed_data["obs"], lon_name, lat_name, mean_levels, mean_cmap,
+                             lat_min, lat_max, lon_min, lon_max, "Observation Annual Mean (°C)")
     fig.colorbar(contour1, ax=axes[0], orientation='horizontal', pad=0.1, fraction=0.05, shrink=0.8)
 
     # Plot Model 1 Annual Mean
-    contour2 = plot_function(axes[1], model1_annual_data, lon_name, lat_name, mean_levels, mean_cmap,
-                             lat_min, lat_max, lon_min, lon_max, "Model 1 Annual Mean")
+    contour2 = plot_function(axes[1], processed_data["model1"], lon_name, lat_name, mean_levels, mean_cmap,
+                             lat_min, lat_max, lon_min, lon_max, "Model 1 Annual Mean (°C)")
     fig.colorbar(contour2, ax=axes[1], orientation='horizontal', pad=0.1, fraction=0.05, shrink=0.8)
 
     # Plot Bias between Model 1 and Observation
-    contour3 = plot_function(axes[2], bias1_annual_data, lon_name, lat_name, bias_levels, bias_cmap,
-                             lat_min, lat_max, lon_min, lon_max, "Bias (CMIP7 - Obs)")
-    fig.colorbar(contour3, ax=axes[2], orientation='horizontal', pad=0.1, fraction=0.05, shrink=0.8)
+    if "bias1" in processed_data and processed_data["bias1"] is not None:
+        contour3 = plot_function(axes[2], processed_data["bias1"], lon_name, lat_name, bias_levels, bias_cmap,
+                                 lat_min, lat_max, lon_min, lon_max, "Bias (Obs - Model 1)")
+        fig.colorbar(contour3, ax=axes[2], orientation='horizontal', pad=0.1, fraction=0.05, shrink=0.8)
+    else:
+        axes[2].remove()
 
     # Save plot
     output_file = os.path.join(output_dir, f"{var}_annual_comparison_without_model2_{projection}.png")
+
+
 
 # Save the plot
 plt.savefig(output_file)

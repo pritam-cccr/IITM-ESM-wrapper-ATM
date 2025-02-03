@@ -3,13 +3,12 @@
 #
 gridtype  = lonlat
 gridsize  = 17415
-datatype  = float
 xsize     = 135
 ysize     = 129
-xname     = longitude
+xname     = LONGITUDE
 xlongname = "longitude"
 xunits    = "degrees_east"
-yname     = latitude
+yname     = LATITUDE
 ylongname = "latitude"
 yunits    = "degrees_north"
 xfirst    = 66.5

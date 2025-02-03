@@ -1,219 +1,192 @@
+; ==============================================================================
+;  Copyright (C) 2025 Centre for Climate Change Research (CCCR), IITM
+;
+;  This script is part of the CCCR IITM_ESM diagnostics system.
+;
+;  Author: Pritam Das Mahapatra
+;  Date: January 2025
+;  Version: 1.0
+;  Usage:
+;  This script should be executed within an NCL environment and assumes 
+;  required NetCDF files are available.
+;
+; ==============================================================================
 ; Load necessary libraries
 load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/gsn_code.ncl"
 load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/gsn_csm.ncl"
 
 begin
-;---Open shapefile and read lat/lon values.
-  dir     = "./India-State-and-Country-Shapefile-Updated-Jan-2020-master/"
-  shp_file= dir + "India_Country_Boundary.shp"
-  f       = addfile(shp_file, "r")
-  shp_lon = tofloat( f->y )
-  shp_lat = tofloat( f->x )
-  nshp    = dimsizes(shp_lon)
 
-;---Get Max & Min lat/lon for the shape file 
+  ;========================================================
+  ; Define file paths
+  ;========================================================
+  mask_file_name = "./INDIA_mask.nc"
+  base_dir = "./output_data/"
+  model1_file = base_dir + "model1_pr_annual_all_year_no_plev_regrid.nc"
+  model2_file = base_dir + "model2_pr_annual_all_year_no_plev_regrid.nc"
+  obs_file    = base_dir + "obs_precip_all_years_regrid.nc"
 
-  min_shp_lat = min(shp_lat) 
-  max_shp_lat = max(shp_lat)
-  min_shp_lon = min(shp_lon)
-  max_shp_lon = max(shp_lon)
-  
-  print(min_shp_lon)
-  print(max_shp_lon)
-  print(min_shp_lat)
-  print(max_shp_lat)
-    ;========================================================
-    ; Set paths and filenames
-    base_dir = "./output_data/"
-    pltDir   =  "./plots_pr/"
-    pltName  = "precip_monthly_climatology_INDIA "
-    pltPath  = pltDir + pltName
-
-    model1_file = base_dir + "model1_pr_annual_all_year_no_plev_regrid.nc"
-    model2_file = base_dir + "model2_pr_annual_all_year_no_plev_regrid.nc"
-    obs_file    = base_dir + "obs_precip_all_years_regrid.nc"
-
-;========================================================
-; Open NetCDF files and read variables
-;========================================================
-f1 = addfile(model1_file, "r")
-f2 = addfile(model2_file, "r")
-f3 = addfile(obs_file, "r")
-
-; Read the precipitation variables
-m1 = f1->pr(:,{6.75:37.08},{68.12:97.4})
-  m1_dimp=dimsizes(m1)
-  m1_ntim    = m1_dimp(0)
-  m1_nlat    = m1_dimp(1)
-  m1_mlon    = m1_dimp(2)
-
-m2 = f2->pr(:,{6.75:37.08},{68.12:97.4})
-  m2_dimp=dimsizes(m2)
-  m2_ntim    = m2_dimp(0)
-  m2_nlat    = m2_dimp(1)
-  m2_mlon    = m2_dimp(2)
-
-ob = f3->precip(:,{6.75:37.08},{68.12:97.4})
-  ob_dimp=dimsizes(m2)
-  ob_ntim    = ob_dimp(0)
-  ob_nlat    = ob_dimp(1)
-  ob_mlon    = ob_dimp(2)
-printVarSummary(m1)
-printVarSummary(m2)
-printVarSummary(ob)
-;=============================================
-;---Create arrays for masking and initialize with _FillValue
-m1_pmask = new(dimsizes(m1), typeof(m1), m1@_FillValue)
-m2_pmask = new(dimsizes(m2), typeof(m2), m2@_FillValue)
-ob_pmask = new(dimsizes(ob), typeof(ob), ob@_FillValue)
-
-;---Copy coordinates from original variables
-copy_VarCoords(m1, m1_pmask)
-copy_VarCoords(m2, m2_pmask)
-copy_VarCoords(ob, ob_pmask)
-
-
-;---Mask `m1`
-m1_pmask = new(dimsizes(m1), typeof(m1), m1@_FillValue)  ; Create mask array
-copy_VarCoords(m1, m1_pmask)                             ; Copy coordinates
-
-do nl = 0, dimsizes(m1&latitude) - 1
-  do ml = 0, dimsizes(m1&longitude) - 1
-    if (gc_inout(m1&latitude(nl), m1&longitude(ml), shp_lat, shp_lon)) then
-      m1_pmask(:, nl, ml) = m1(:, nl, ml)  ; Apply mask to `m1`
-    end if
-  end do
-end do
-
-;---Mask `m2`
-m2_pmask = new(dimsizes(m2), typeof(m2), m2@_FillValue)  ; Create mask array
-copy_VarCoords(m2, m2_pmask)                             ; Copy coordinates
-
-do nl = 0, dimsizes(m2&latitude) - 1
-  do ml = 0, dimsizes(m2&longitude) - 1
-    if (gc_inout(m2&latitude(nl), m2&longitude(ml), shp_lat, shp_lon)) then
-      m2_pmask(:, nl, ml) = m2(:, nl, ml)  ; Apply mask to `m2`
-    end if
-  end do
-end do
-
-;---Mask `ob`
-ob_pmask = new(dimsizes(ob), typeof(ob), ob@_FillValue)  ; Create mask array
-copy_VarCoords(ob, ob_pmask)                             ; Copy coordinates
-
-do nl = 0, dimsizes(ob&latitude) - 1
-  do ml = 0, dimsizes(ob&longitude) - 1
-    if (gc_inout(ob&latitude(nl), ob&longitude(ml), shp_lat, shp_lon)) then
-      ob_pmask(:, nl, ml) = ob(:, nl, ml)  ; Apply mask to `ob`
-    end if
-  end do
-end do
-
-
-  ;=================================
-  printVarSummary(m1_pmask)
-printVarSummary(m2_pmask)
-printVarSummary(ob_pmask)
  
-;=============
-   m1_mean = [dim_avg_n_Wrap(m1_pmask, 0) ] *86400
-   m2_mean =[ dim_avg_n_Wrap(m2_pmask, 0) ] *86400
-   ob_mean =[ dim_avg_n_Wrap(ob_pmask, 0)]
-   
-   printVarSummary(m1_mean)
-printVarSummary(m2_mean)
-printVarSummary(ob_mean)
-  ;=================================
- /;  
-    m1_mean&lat@units="degrees_north" 
-    m1_mean&lon@units="degrees_east" 
-   
-   
-printVarSummary(m1_mean)
-printVarSummary(m2_mean)
-printVarSummary(ob_mean)
-  ;=================================
+
+  ;========================================================
+  ; Open mask file and read mask variable
+  ;========================================================
+  mask_file = addfile(mask_file_name, "r")  
+  maskk = dble2flt(mask_file->mask(0,:,:))  
+
+  ;========================================================
+  ; Open NetCDF files and read precipitation data
+  ;========================================================
+  f1 = addfile(model1_file, "r")
+  f2 = addfile(model2_file, "r")
+  f3 = addfile(obs_file, "r")
+
+  m1 = f1->pr(:,:,:)
+  m2 = f2->pr(:,:,:)
+  ob = f3->precip(:,:,:)
+
+  ;========================================================
+  ; Create empty masked arrays
+  ;========================================================
+  m1_masked = new(dimsizes(m1), typeof(m1), getFillValue(m1))
+  m2_masked = new(dimsizes(m2), typeof(m2), getFillValue(m2))
+  ob_masked = new(dimsizes(ob), typeof(ob), getFillValue(ob))
+
+  ;========================================================
+  ; Apply mask separately for each dataset due to different time dimensions
+  ;========================================================
+ 
+; Loop for Model 1 (m1)
+do t = 0, dimsizes(m1(:,0,0)) - 1
+    m1_masked(t,:,:) = m1(t,:,:)  ; Initialize with original data
+    m1_masked(t,:,:) = where(maskk .eq. 1, m1_masked(t,:,:), m1@_FillValue)
+end do
+
+; Loop for Model 2 (m2)
+do t = 0, dimsizes(m2(:,0,0)) - 1
+    m2_masked(t,:,:) = m2(t,:,:)  ; Initialize with original data
+    m2_masked(t,:,:) = where(maskk .eq. 1, m2_masked(t,:,:), m2@_FillValue)
+end do
+
+; Loop for Observation (ob)
+do t = 0, dimsizes(ob(:,0,0)) - 1
+    ob_masked(t,:,:) = ob(t,:,:)  ; Initialize with original data
+    ob_masked(t,:,:) = where(maskk .eq. 1, ob_masked(t,:,:), ob@_FillValue)
+end do
+  ;========================================================
+  ; Compute Time Mean (dim_avg_n_Wrap)
+  ;========================================================
+  m1_mean = dim_avg_n_Wrap(m1_masked, 0) * 86400
+  m2_mean = dim_avg_n_Wrap(m2_masked, 0) * 86400
+  ob_mean = dim_avg_n_Wrap(ob_masked, 0)  
+
+  ;========================================================
+  ; Assign correct latitude and longitude metadata
+  ;========================================================
+  copy_VarCoords(m1_masked(0,:,:), m1_mean)
+  copy_VarCoords(m2_masked(0,:,:), m2_mean)
+  copy_VarCoords(ob_masked(0,:,:), ob_mean)
+
+  ;========================================================
+  ; Compute Bias (Difference between datasets)
+  ;========================================================
+  bias1 = m1_mean - ob_mean   ; CMIP7 - Observation
+  bias2 = m2_mean - ob_mean   ; CMIP6 - Observation
+  bias3 = m1_mean - m2_mean   ; CMIP7 - CMIP6
+
+  copy_VarCoords(m1_mean, bias1)
+  copy_VarCoords(m2_mean, bias2)
+  copy_VarCoords(m1_mean, bias3)
+
+  ;========================================================
+  ; Plotting
+  ;========================================================
+  pltDir   =  "./plots_pr/"
+  pltName  = "precip_bias_INDIA"
+  pltPath  = pltDir + pltName
+
+  wks = gsn_open_wks("png", pltPath)
+  plot = new(6, "graphic")
+
+  res = True
+  res@gsnMaximize = True
+  res@gsnFrame = False                  
+  res@gsnDraw = False                   
+  res@mpOutlineOn   = False
+  res@mpFillOn      = False                   
+  res@gsnAddCyclic = False
+  res@cnFillOn = True                   
+  res@cnLinesOn = False                 
+  res@cnLineLabelsOn = False            
+  res@cnInfoLabelOn = False     
+  res@gsnLeftString = ""
+  res@gsnRightString = ""
+  ;res@lbLabelBarOn = False
+  res@lbTitleFontHeightF = .02
+  res@lbTitleString = "mm/day"
+  res@lbTitlePosition = "Bottom"
+  res@lbTitleDirection = "Across"
+  res@lbLabelStride = 1
+  res@lbBoxEndCapStyle = "TriangleBothEnds"
+  res@lbOrientation = "horizontal"
+  res@pmLabelBarOrthogonalPosF = 0.1
+
+  res@mpLimitMode = "LatLon"      
+  res@mpMinLatF = 6                  
+  res@mpMaxLatF = 40                  
+  res@mpMinLonF = 66                  
+  res@mpMaxLonF = 100                  
+
+  ; Define color palettes
+  res_mean = res
+  res_mean@cnFillPalette = "CBR_wet"
+  res_mean@cnLevelSelectionMode = "ManualLevels"
+  res_mean@cnMinLevelValF = 0
+  res_mean@cnMaxLevelValF = 8
+  res_mean@cnLevelSpacingF = 0.25
   
-  wks = gsn_open_wks("pdf", pltPath)
- plot = new(3 * 1, "graphic")
-    ; Define common plot resources
-    res = True
-    res@gsnMaximize = True
-    res@gsnFrame = False                  ; Don't advance the frame
-    res@gsnDraw = False                   ; Don't draw immediately
-    res@mpFillOn = False                  ; Turn off map fill
- res@gsnAddCyclic         =  False
-    res@cnFillOn = True                   ; Turn on contour fill
-    res@cnLinesOn = False                 ; Turn off contour lines
-    res@cnLineLabelsOn = False            ; Turn off contour labels
-    res@cnInfoLabelOn = False             ; Turn off contour info label
+  res_bias = res
+  res_bias@cnFillPalette = "hotcold_18lev"
+   res_bias@cnLevelSelectionMode = "ManualLevels"
+  res_bias@cnMinLevelValF = -4
+  res_bias@cnMaxLevelValF = 4
+  res_bias@cnLevelSpacingF = 0.5
 
-    ; Define color palettes
-    res@tmYROn = False
-    res@tmXTOn = False
-    res@gsnLeftString = ""
-res@gsnRightString = ""
-res@lbLabelBarOn = False
-    res@lbTitleFontHeightF = .02
-    res@lbTitleString = "mm/day"
-    res@lbTitlePosition = "Bottom"
-    res@lbTitleDirection = "Across"
-    res@lbLabelStride = 1
-    res@lbBoxEndCapStyle = "TriangleBothEnds"
-    res@lbOrientation = "horizontal"
-    res@pmLabelBarOrthogonalPosF = 0.1
-    res@pmLabelBarWidthF = 0.8 ;* (lon_max - lon_min) / 360.0
-    res@mpMinLatF = 66                   ; Minimum latitude
-    res@mpMaxLatF = 90                    ; Maximum latitude
-    res@mpMinLonF = 6                     ; Minimum longitude
-    res@mpMaxLonF = 38                   ; Maximum longitude
-res_mean = res
-    res_mean@cnFillPalette = "CBR_wet"
-    res_mean@cnLevelSelectionMode = "ManualLevels"
-    res_mean@cnMinLevelValF = 0.0
-    res_mean@cnMaxLevelValF = 10.0
-    res_mean@cnLevelSpacingF = 2.0
-
-    res_bias = res
-    res_bias@cnFillPalette = "hotcold_18lev"
-    res_bias@cnLevelSelectionMode = "ManualLevels"
-    res_bias@cnMinLevelValF = -60.0
-    res_bias@cnMaxLevelValF = 60.0
-    res_bias@cnLevelSpacingF = 5.0
-
-    ; Plot each variable
-    res_mean@gsnCenterString = "Observation"
-    plot(0) = gsn_csm_contour_map(wks, ob_mean, res_mean)
-    
-
-
-    res_mean@gsnCenterString = "CMIP7"
-    plot(1) = gsn_csm_contour_map(wks, m1_mean, res_mean)
-
-
-    
-res_mean@lbLabelBarOn          = True
-    res_mean@gsnCenterString = "CMIP6"
-    plot(2) = gsn_csm_contour_map(wks, m2_mean, res_mean)
-
-
-
-    
-    ; Panel plots
-    ; Panel-specific resources
-    resP                = True
-    resP@gsnMaximize    = True
-    resP@gsnFrame       = False
-    resP@gsnPanelLeft   = 0.005
-    resP@gsnPanelBottom = 0.05 
-    ;resP@gsnPanelSave   = True      ; Save the state of the paneled plots so we can
-    resP@gsnPanelMainString = "Precipitation"
-    ; Draw panel
-    gsn_panel(wks, plot, (/3, 1/), resP)
+  ; Generate Mean Plots with Shapefile Overlay
+  res_mean@gsnCenterString = "Observation"
+  plot(0) = gsn_csm_contour_map(wks, ob_mean, res_mean)
   
+  res_bias@gsnCenterString = "CMIP7 - CMIP6 Bias"
+  plot(1) = gsn_csm_contour_map(wks, bias3, res_bias)
 
-    ; Finalize the plot
-    frame(wks)
-;/
+  res_mean@gsnCenterString = "CMIP7"
+  plot(2) = gsn_csm_contour_map(wks, m1_mean, res_mean)
+  
+  res_bias@gsnCenterString = "CMIP7 - OBS Bias"
+  plot(3) = gsn_csm_contour_map(wks, bias1, res_bias)
+
+  res_mean@gsnCenterString = "CMIP6"
+  plot(4) = gsn_csm_contour_map(wks, m2_mean, res_mean)
+
+  res_bias@gsnCenterString = "CMIP6 - OBS Bias"
+  plot(5) = gsn_csm_contour_map(wks, bias2, res_bias)
+
+  ;--- Panel plots
+  resP = True
+  resP@gsnMaximize = True
+  resP@lbLabelBarOn = True
+  resP@gsnPanelMainString = "Precipitation Analysis"
+  gsn_panel(wks, plot, (/3,2/), resP)
+
+;  ;--- Add Shapefile Borders
+;   shapefile_path = "./India_Country_Boundary_FINAL.shp"
+  
+;  plres = True
+;  plres@gsLineColor = "black"
+;  gsn_add_shapefile_polylines(wks, plot, shapefile_path, plres)
+
+  ;--- Finalize the plot
+;  frame(wks)
 
 end
+

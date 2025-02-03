@@ -1,3 +1,16 @@
+; ==============================================================================
+;  Copyright (C) 2025 Centre for Climate Change Research (CCCR), IITM
+;
+;  This script is part of the CCCR IITM_ESM diagnostics system.
+;
+;  Author: Pritam Das Mahapatra
+;  Date: January 2025
+;  Version: 1.0
+;  Usage:
+;  This script should be executed within an NCL environment and assumes 
+;  required NetCDF files are available.
+;
+; ==============================================================================
 ; Load necessary libraries
 load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/gsn_code.ncl"
 load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/gsn_csm.ncl"
@@ -23,11 +36,11 @@ f2 = addfile(model2_file, "r")
 f3 = addfile(obs_file, "r")
 
 ; Read the precipitation variables
-m1 = f1->pr(:,{14:28},{68:90})
+m1 = f1->pr(:,{16:26},{75:85})
 
-m2 = f2->pr(:,{14:28},{68:90})
+m2 = f2->pr(:,{16:26},{75:85})
 
-ob = f3->precip(:,{14:28},{68:90})
+ob = f3->precip(:,{16:26},{75:85})
 
 printVarSummary(m1)
 printVarSummary(m2)
@@ -66,7 +79,7 @@ printMinMax(ob_clim,0)
     res@gsnMaximize           = True        ; Maximize plot in the frame
     res@xyLineThicknessF       = 2.0        ; Set line thickness
     res@tmLabelAutoStride      = True       ; Auto stride for time labels
-    res@tiMainString           = "Climatology Precipitation (mm/day) [68_90E, 16_28N]"
+    res@tiMainString           = "Climatology Precipitation Central India (mm/day) [75_88E, 14_26N]"
     res@trYMinF                = 0        ; Set Y-axis minimum (adjust as needed)
    res@trYMaxF                = 15        ; Set Y-axis maximum (adjust as needed)
     ;res@trXMinF                = 0        ; Set Y-axis minimum (adjust as needed)

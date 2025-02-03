@@ -1,7 +1,12 @@
 #!/bin/bash
-# DESCRIPTION: Plotting script for IITM_ESM diagnostics
-# Last updated: November 2024
-
+# ==============================================================================
+# Copyright (C) 2025 Centre for Climate Change Research (CCCR), IITM
+#
+# This script is part of the CCCR IITM_ESM diagnostics system.
+#
+# Author: [Pritam Das Mahapatra]
+# Date: January 2025
+# ==============================================================================
 
 
 # Source user inputs from the external file
@@ -27,6 +32,17 @@ function verify_file {
     fi
 }
 
+# Function to check if a variable is in the user-defined list
+function is_variable_in_list {
+    local pvar="$1"
+    for item in "${var_list[@]}"; do
+        if [[ "$item" == "$pvar" ]]; then
+            return 0  # Found
+        fi
+    done
+    return 1  # Not found
+}
+
 # Initialize variables
 plev_variables=()
 no_plev_variables=()
@@ -39,7 +55,7 @@ model2_prefix=""
 obs_prefix=""
 start_year=""
 end_year=""
-plot_var=""
+plot_var=()
 separator_found=false
 
 # Debug mode flag
@@ -85,6 +101,7 @@ for arg in "$@"; do
             "$model1_prefix") model1_prefix="$arg" ;;
             "$model2_prefix") [[ "$arg" != "$output_dir/final_obs_" ]] && model2_prefix="$arg" ;;
             "$obs_prefix") obs_prefix="$arg" ;;
+            "$plot_var") plot_var="$arg" ;;
         esac
     fi
 done
@@ -95,7 +112,7 @@ if $debug; then
     echo "Debug: Check inputs for plotting function to work:"
     echo "  Pressure-Level Variables: ${plev_variables[@]}"
     echo "  Non-Pressure-Level Variables: ${no_plev_variables[@]}"
-    echo "	PLOT Var:$plot_var"
+    echo "  PLOT Var:${plot_var[@]}"
     echo "  Season: $season"
     echo "  Projection: $projection"
     echo "  Latitude Range: $lat_range"
@@ -243,15 +260,9 @@ done
 echo "This part will be skipped."
 COMMENT_BLOCK
 #########========================
-function is_variable_in_list {
-    local pvar="$1"
-    for item in "${var_list[@]}"; do
-        if [[ "$item" == "$pvar" ]]; then
-            return 0  # Found
-        fi
-    done
-    return 1  # Not found
-}
+
+echo "This part will be skipped."
+
 
 #==============================================
 # Check if "tas" is in the variable list (ensure the function exists)
@@ -333,10 +344,15 @@ if is_variable_in_list "pr"; then
     echo "Regridding completed for PR."
 
     # Check if NCL scripts exist before running
-    if [[ -f precip_monthly_climatology_box1.ncl ]]; then
-        ncl precip_monthly_climatology_box1.ncl
+    if [[ -f precip_monthly_climatology_India.ncl ]]; then
+        ncl precip_monthly_climatology_India.ncl
     else
-        echo "Warning: precip_monthly_climatology_box1.ncl not found!"
+        echo "Warning: precip_monthly_climatology_India.ncl not found!"
+    fi
+    if [[ -f precip_India_contour.ncl ]]; then
+        ncl precip_India_contour.ncl
+    else
+        echo "Warning: precip_India_contour.ncll not found!"
     fi
 
     if [[ -f precip_monthly_climatology_box2.ncl ]]; then
@@ -349,10 +365,7 @@ if is_variable_in_list "pr"; then
 fi
 
 ####==============================================================================
-for var in "slp" ; do
-    suffix="_plev"
-    call_specialized_plot "$var" "$suffix"
-done
+
 if is_variable_in_list "slp"; then
     echo "Processing SLP..."
 
@@ -363,130 +376,117 @@ if is_variable_in_list "slp"; then
     echo "SLP processing and plotting completed."
 fi
 
-: << 'COMMENT_BLOCK'
+
 echo "This part will be skipped."
 ###############
-for var in "evspsbl" ; do
-    suffix="_no_plev"
-    call_specialized_plot "$var" "$suffix"
-done
-######============================================================================
-for var in "ta" ; do
+# Processing TAS
+if is_variable_in_list "evspsbl"; then
+    echo "Processing evspsbl..."
+    
+    for var in "evspsbl"; do
+        suffix="_no_plev"
+        call_specialized_plot "$var" "$suffix"
+    done
+fi
+
+# Processing TA
+if is_variable_in_list "ta"; then
+    echo "Processing TA..."
+    
+    for var in "ta"; do
+        suffix="_plev"
+        call_specialized_plot "$var" "$suffix"
+
+        ncl ta_level_lat_ann.ncl
+        ncl ta_level_lat_season.ncl
+        ncl ta_level_lon_ann.ncl
+        ncl ta_level_lon_season.ncl
+    done
+fi
+
+# Processing Geopotential Height (hght)
+if is_variable_in_list "hght"; then
+    echo "Processing Geopotential Height plots for hght: Annual and Seasonal"
     suffix="_plev"
-    call_specialized_plot "$var" "$suffix"
-    
-    ncl ta_level_lat_ann.ncl
-    ncl ta_level_lat_season.ncl
-    ncl ta_level_lon_ann.ncl
-    ncl ta_level_lon_season.ncl
-    
-    
-done
 
-#########========================================================================
-# Define suffix for pressure levels
-suffix="_plev"
+    obs_annual_regridded_hght="${output_dir}/obs_annual_mean_z_regridded.nc"
+    obs_season_regridded_hght="${output_dir}/obs_${season}_mean_z_regridded.nc"
+    model1_annual_hght="${model1_prefix}_annual_mean_hght${suffix}.nc"
+    model1_season_hght="${model1_prefix}_${season}_mean_hght${suffix}.nc"
+    model2_annual_regridded_hght="${output_dir}/model2_annual_mean_hght${suffix}_regridded.nc"
+    model2_season_regridded_hght="${output_dir}/model2_${season}_mean_hght${suffix}_regridded.nc"
 
-# Define file paths for hght (annual and seasonal)
-obs_annual_regridded_hght="${output_dir}/obs_annual_mean_z_regridded.nc"
-obs_season_regridded_hght="${output_dir}/obs_${season}_mean_z_regridded.nc"
-model1_annual_hght="${model1_prefix}_annual_mean_hght${suffix}.nc"
-model1_season_hght="${model1_prefix}_${season}_mean_hght${suffix}.nc"
-model2_annual_regridded_hght="${output_dir}/model2_annual_mean_hght${suffix}_regridded.nc"
-model2_season_regridded_hght="${output_dir}/model2_${season}_mean_hght${suffix}_regridded.nc"
+    ./special_plot_hght_ann.sh "$obs_annual_regridded_hght" "$model1_annual_hght" "$projection" "$lat_range" "$lon_range" "$season" "$model2_annual_regridded_hght" 
+    ./special_plot_hght_season.sh "$obs_season_regridded_hght" "$model1_season_hght" "$projection" "$lat_range" "$lon_range" "$season" "$model2_season_regridded_hght"
 
-# Debugging info
-echo "Processing Geopetential Height plots for hght: Annual and Seasonal"
+    echo "Height (hght) plotting completed."
+fi
 
-# Call specialized plotting script for annual data (hght)
-./special_plot_hght_ann.sh "$obs_annual_regridded_hght" "$model1_annual_hght" "$projection" "$lat_range" "$lon_range" "$season" "$model2_annual_regridded_hght" 
+# Processing Wind (ua & va)
+if is_variable_in_list "ua" || is_variable_in_list "va"; then
+    echo "Processing wind plots for both ua and va: Annual and Seasonal"
+    suffix="_plev"
 
-./special_plot_hght_season.sh "$obs_season_regridded_hght" "$model1_season_hght" "$projection" "$lat_range" "$lon_range" "$season" "$model2_season_regridded_hght"
-echo "Height (hght) plotting completed."
-#########=========================================================================
+    obs_annual_regridded_ua="${output_dir}/obs_annual_mean_u_regridded.nc"
+    obs_season_regridded_ua="${output_dir}/obs_${season}_mean_u_regridded.nc"
+    model1_annual_ua="${model1_prefix}_annual_mean_ua${suffix}.nc"
+    model1_season_ua="${model1_prefix}_${season}_mean_ua${suffix}.nc"
+    model2_annual_regridded_ua="${output_dir}/model2_annual_mean_ua${suffix}_regridded.nc"
+    model2_season_regridded_ua="${output_dir}/model2_${season}_mean_ua${suffix}_regridded.nc"
 
-# Define suffix for pressure levels
-suffix="_plev"
+    obs_annual_regridded_va="${output_dir}/obs_annual_mean_v_regridded.nc"
+    obs_season_regridded_va="${output_dir}/obs_${season}_mean_v_regridded.nc"
+    model1_annual_va="${model1_prefix}_annual_mean_va${suffix}.nc"
+    model1_season_va="${model1_prefix}_${season}_mean_va${suffix}.nc"
+    model2_annual_regridded_va="${output_dir}/model2_annual_mean_va${suffix}_regridded.nc"
+    model2_season_regridded_va="${output_dir}/model2_${season}_mean_va${suffix}_regridded.nc"
 
-# Define file paths for ua and va (annual and seasonal)
-obs_annual_regridded_ua="${output_dir}/obs_annual_mean_u_regridded.nc"
-obs_season_regridded_ua="${output_dir}/obs_${season}_mean_u_regridded.nc"
-model1_annual_ua="${model1_prefix}_annual_mean_ua${suffix}.nc"
-model1_season_ua="${model1_prefix}_${season}_mean_ua${suffix}.nc"
-model2_annual_regridded_ua="${output_dir}/model2_annual_mean_ua${suffix}_regridded.nc"
-model2_season_regridded_ua="${output_dir}/model2_${season}_mean_ua${suffix}_regridded.nc"
+    ./special_plot_wind_ann.sh "$obs_annual_regridded_ua" "$obs_annual_regridded_va" "$model1_annual_ua" "$model1_annual_va" "$projection" "$lat_range" "$lon_range" "$season" "$model2_annual_regridded_ua" "$model2_annual_regridded_va"
+    check_error "Annual plotting for ua and va"
 
-obs_annual_regridded_va="${output_dir}/obs_annual_mean_v_regridded.nc"
-obs_season_regridded_va="${output_dir}/obs_${season}_mean_v_regridded.nc"
-model1_annual_va="${model1_prefix}_annual_mean_va${suffix}.nc"
-model1_season_va="${model1_prefix}_${season}_mean_va${suffix}.nc"
-model2_annual_regridded_va="${output_dir}/model2_annual_mean_va${suffix}_regridded.nc"
-model2_season_regridded_va="${output_dir}/model2_${season}_mean_va${suffix}_regridded.nc"
+    ./special_plot_wind_season.sh "$obs_season_regridded_ua" "$obs_season_regridded_va" "$model1_season_ua" "$model1_season_va" "$projection" "$lat_range" "$lon_range" "$season" "$model2_season_regridded_ua" "$model2_season_regridded_va"
+    check_error "Seasonal plotting for ua and va"
 
-# Debugging info
-echo "Processing wind plots for both ua and va: Annual and Seasonal"
+    echo "Wind plotting for both ua and va completed."
+fi
 
-# Call specialized plotting script for annual data (ua and va together)
-./special_plot_wind_ann.sh "$obs_annual_regridded_ua" "$obs_annual_regridded_va" "$model1_annual_ua" "$model1_annual_va" "$projection" "$lat_range" "$lon_range" "$season" "$model2_annual_regridded_ua" "$model2_annual_regridded_va"
+# Processing Radiation Data (rsdt, rlut, rsut)
+if is_variable_in_list "rsdt" || is_variable_in_list "rlut" || is_variable_in_list "rsut"; then
+    echo "Processing radiation data rsdt, rlut, and rsut: Annual and Seasonal"
+    suffix="_no_plev"
 
-./special_plot_wind_season.sh "$obs_season_regridded_ua" "$obs_season_regridded_va" "$model1_season_ua" "$model1_season_va" "$projection" "$lat_range" "$lon_range" "$season" "$model2_annual_regridded_ua" "$model2_annual_regridded_va"
-check_error "Annual plotting for ua and va"
+    obs_annual_regridded_rsdt="${output_dir}/obs_annual_mean_solar_mon_regridded.nc"
+    obs_season_regridded_rsdt="${output_dir}/obs_${season}_mean_solar_mon_regridded.nc"
+    model1_annual_rsdt="${model1_prefix}_annual_mean_rsdt${suffix}.nc"
+    model1_season_rsdt="${model1_prefix}_${season}_mean_rsdt${suffix}.nc"
+    model2_annual_regridded_rsdt="${output_dir}/model2_annual_mean_rsdt${suffix}_regridded.nc"
+    model2_season_regridded_rsdt="${output_dir}/model2_${season}_mean_rsdt${suffix}_regridded.nc"
 
+    obs_annual_regridded_rlut="${output_dir}/obs_annual_mean_toa_lw_all_mon_regridded.nc"
+    obs_season_regridded_rlut="${output_dir}/obs_${season}_mean_toa_lw_all_mon_regridded.nc"
+    model1_annual_rlut="${model1_prefix}_annual_mean_rlut${suffix}.nc"
+    model1_season_rlut="${model1_prefix}_${season}_mean_rlut${suffix}.nc"
+    model2_annual_regridded_rlut="${output_dir}/model2_annual_mean_rlut${suffix}_regridded.nc"
+    model2_season_regridded_rlut="${output_dir}/model2_${season}_mean_rlut${suffix}_regridded.nc"
 
-check_error "Seasonal plotting for ua and va"
+    obs_annual_regridded_rsut="${output_dir}/obs_annual_mean_toa_sw_all_mon_regridded.nc"
+    obs_season_regridded_rsut="${output_dir}/obs_${season}_mean_toa_sw_all_mon_regridded.nc"
+    model1_annual_rsut="${model1_prefix}_annual_mean_rsut${suffix}.nc"
+    model1_season_rsut="${model1_prefix}_${season}_mean_rsut${suffix}.nc"
+    model2_annual_regridded_rsut="${output_dir}/model2_annual_mean_rsut${suffix}_regridded.nc"
+    model2_season_regridded_rsut="${output_dir}/model2_${season}_mean_rsut${suffix}_regridded.nc"
 
-echo "Wind plotting for both ua and va completed."
+    ./special_plot_radiation_ann.sh "$obs_annual_regridded_rsdt" "$obs_annual_regridded_rlut" "$obs_annual_regridded_rsut" "$model1_annual_rsdt" "$model1_annual_rlut" "$model1_annual_rsut" "$projection" "$lat_range" "$lon_range" "$season" "$model2_annual_regridded_rsdt" "$model2_annual_regridded_rlut" "$model2_annual_regridded_rsut"
+    check_error "Annual plotting for rsdt, rlut, and rsut"
 
+    ./special_plot_radiation_season.sh "$obs_season_regridded_rsdt" "$obs_season_regridded_rlut" "$obs_season_regridded_rsut" "$model1_season_rsdt" "$model1_season_rlut" "$model1_season_rsut" "$projection" "$lat_range" "$lon_range" "$season" "$model2_season_regridded_rsdt" "$model2_season_regridded_rlut" "$model2_season_regridded_rsut"
+    check_error "Seasonal plotting for rsdt, rlut, and rsut"
 
-##########===========================================================================
-
-# Define suffix for pressure levels
-echo "Processing radiation data rsdt, rlut, and rsut: Annual and Seasonal"
-suffix="_no_plev"
-
-# Define file paths for rsdt, rlut, and rsut (annual and seasonal)
-obs_annual_regridded_rsdt="${output_dir}/obs_annual_mean_solar_mon_regridded.nc"
-obs_season_regridded_rsdt="${output_dir}/obs_${season}_mean_solar_mon_regridded.nc"
-model1_annual_rsdt="${model1_prefix}_annual_mean_rsdt${suffix}.nc"
-model1_season_rsdt="${model1_prefix}_${season}_mean_rsdt${suffix}.nc"
-model2_annual_regridded_rsdt="${output_dir}/model2_annual_mean_rsdt${suffix}_regridded.nc"
-model2_season_regridded_rsdt="${output_dir}/model2_${season}_mean_rsdt${suffix}_regridded.nc"
-
-obs_annual_regridded_rlut="${output_dir}/obs_annual_mean_toa_lw_all_mon_regridded.nc"
-obs_season_regridded_rlut="${output_dir}/obs_${season}_mean_toa_lw_all_mon_regridded.nc"
-model1_annual_rlut="${model1_prefix}_annual_mean_rlut${suffix}.nc"
-model1_season_rlut="${model1_prefix}_${season}_mean_rlut${suffix}.nc"
-model2_annual_regridded_rlut="${output_dir}/model2_annual_mean_rlut${suffix}_regridded.nc"
-model2_season_regridded_rlut="${output_dir}/model2_${season}_mean_rlut${suffix}_regridded.nc"
-
-obs_annual_regridded_rsut="${output_dir}/obs_annual_mean_toa_sw_all_mon_regridded.nc"
-obs_season_regridded_rsut="${output_dir}/obs_${season}_mean_toa_sw_all_mon_regridded.nc"
-model1_annual_rsut="${model1_prefix}_annual_mean_rsut${suffix}.nc"
-model1_season_rsut="${model1_prefix}_${season}_mean_rsut${suffix}.nc"
-model2_annual_regridded_rsut="${output_dir}/model2_annual_mean_rsut${suffix}_regridded.nc"
-model2_season_regridded_rsut="${output_dir}/model2_${season}_mean_rsut${suffix}_regridded.nc"
-
-# Debugging info
-echo "Processing radiation plots for rsdt, rlut, and rsut: Annual and Seasonal"
-
-# Call specialized plotting script for annual data (rsdt, rlut, rsut together)
-./special_plot_radiation_ann.sh "$obs_annual_regridded_rsdt" "$obs_annual_regridded_rlut" "$obs_annual_regridded_rsut" \
-"$model1_annual_rsdt" "$model1_annual_rlut" "$model1_annual_rsut" \
-"$projection" "$lat_range" "$lon_range" "$season" \
-"$model2_annual_regridded_rsdt" "$model2_annual_regridded_rlut" "$model2_annual_regridded_rsut"
-check_error "Annual plotting for rsdt, rlut, and rsut"
-
-# Call specialized plotting script for seasonal data (rsdt, rlut, rsut together)
-./special_plot_radiation_season.sh "$obs_season_regridded_rsdt" "$obs_season_regridded_rlut" "$obs_season_regridded_rsut" \
-"$model1_season_rsdt" "$model1_season_rlut" "$model1_season_rsut" \
-"$projection" "$lat_range" "$lon_range" "$season" \
-"$model2_season_regridded_rsdt" "$model2_season_regridded_rlut" "$model2_season_regridded_rsut"
-check_error "Seasonal plotting for rsdt, rlut, and rsut"
-
-echo "Radiation plotting for rsdt, rlut, and rsut completed."
+    echo "Radiation plotting for rsdt, rlut, and rsut completed."
+fi
 
 ####===========================================================
-COMMENT_BLOCK
+
 
 
 

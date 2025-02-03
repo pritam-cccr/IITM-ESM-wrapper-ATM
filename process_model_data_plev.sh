@@ -1,7 +1,14 @@
 #!/bin/bash
 # Script for processing model data with pressure levels (plev) for multiple variables,
 # including annual and seasonal mean calculations.
-# Last argument is an optional prefix for the output files.
+# ==============================================================================
+# Copyright (C) 2025 Centre for Climate Change Research (CCCR), IITM
+#
+# This script is part of the CCCR IITM_ESM diagnostics system.
+#
+# Author: [Pritam Das Mahapatra]
+# Date: January 2025
+# ==============================================================================
 
 # Check if at least 6 arguments are provided
 if [ "$#" -lt 6 ]; then

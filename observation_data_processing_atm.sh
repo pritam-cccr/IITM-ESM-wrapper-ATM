@@ -1,6 +1,12 @@
 #!/bin/bash
-# DESCRIPTION: Modular script for IITM_ESM diagnostics Obs data processing
-# Last updated: November 2024
+# ==============================================================================
+# Copyright (C) 2025 Centre for Climate Change Research (CCCR), IITM
+#
+# This script is part of the CCCR IITM_ESM diagnostics system.
+#
+# Author: [Pritam Das Mahapatra]
+# Date: January 2025
+# ==============================================================================
 
 # Error handling function
 function check_error {

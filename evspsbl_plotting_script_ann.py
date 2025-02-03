@@ -14,6 +14,7 @@ import os
 import numpy as np
 import xarray as xr
 import matplotlib.pyplot as plt
+from matplotlib.colors import ListedColormap
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 from cartopy.mpl.ticker import LongitudeFormatter, LatitudeFormatter
@@ -56,15 +57,9 @@ print(f"Observation Annual: {obs_annual}")
 print(f"Projection: {projection}")
 print(f"Latitude Range: {lat_min} to {lat_max}")
 print(f"Longitude Range: {lon_min} to {lon_max}")
-print(f"Longitude Range: {var} and {obs_var}")
 print("========================")
 
-# Utility functions
-def apply_variable_transformations(data, var, obs_var):
-    """Apply unit conversions for specific variables."""
-    if var == "tas" and obs_var == "t2m":
-        return data - 273.15  # Convert Kelvin to Celsius
-    return data
+
 
 def create_levels(min_val, max_val, step=2):
     """Generate evenly spaced levels."""
@@ -95,7 +90,7 @@ def plot_platecarree(ax, data, lon_name, lat_name, levels, cmap, lat_min, lat_ma
     return contour
 
 def plot_robinson(ax, data, lon_name, lat_name, levels, cmap, lat_min, lat_max, lon_min, lon_max, title):
-    contour = ax.contourf(data[lon_name], data[lat_name], data, transform=ccrs.PlateCarree(central_longitude=0), levels=levels, cmap=cmap, extend="both")
+    contour = ax.contourf(data[lon_name], data[lat_name], data, transform=ccrs.PlateCarree(), levels=levels, cmap=cmap, extend="both")
     ax.coastlines()
     
     gl = ax.gridlines(draw_labels=True, linewidth=1, color="gray", alpha=0.5, linestyle="--")
@@ -107,8 +102,9 @@ def plot_robinson(ax, data, lon_name, lat_name, levels, cmap, lat_min, lat_max, 
     return contour
 
 def plot_polar_stereo(ax, data, lon_name, lat_name, levels, cmap, lat_min, lat_max, lon_min, lon_max, title):
-    contour = ax.contourf(data[lon_name], data[lat_name], data, transform=ccrs.PlateCarree(central_longitude=180), levels=levels, cmap=cmap, extend="both")
+    contour = ax.contourf(data[lon_name], data[lat_name], data, transform=ccrs.PlateCarree(), levels=levels, cmap=cmap, extend="both")
     ax.coastlines()
+    
     gl = ax.gridlines(draw_labels=True, linewidth=1, color="gray", alpha=0.5, linestyle="--")
     gl.xformatter = LongitudeFormatter()
     gl.yformatter = LatitudeFormatter()
@@ -129,24 +125,21 @@ except Exception as e:
     print(f"Error loading datasets: {e}")
     sys.exit(1)
 
-# Apply transformations
-model1_annual_data = apply_variable_transformations(model1_annual_data, var, obs_var)
-obs_annual_data = apply_variable_transformations(obs_annual_data, var, obs_var)
-if model2_annual_data is not None:
-    model2_annual_data = apply_variable_transformations(model2_annual_data, var, obs_var)
+
 
 # Dynamically identify coordinates
 lon_name = "lon" if "lon" in model1_annual_data.coords else "longitude"
 lat_name = "lat" if "lat" in model1_annual_data.coords else "latitude"
 
 # Define levels
-mean_levels = create_levels(-20, 45)  # Adjust range for temperature data
+mean_levels = create_levels(-10, 10)  # Adjust range for temperature data
 bias_levels = create_levelsB(-8, 8)  # Adjust for bias range
 
 
 
-mean_cmap = 'Spectral_r'  # For model and observation
-bias_cmap = 'coolwarm'  # For bias
+# Create the colormap
+mean_cmap = 'YlGnBu'  # For model and observation
+bias_cmap = 'BrBG'  # For bias
 
 
 # Ensure output directory exists
@@ -197,12 +190,12 @@ if model2_annual_data is not None:
     fig.colorbar(contour5, ax=axes[1, 1], orientation='horizontal', pad=0.1, fraction=0.05, shrink=0.8)
 
     # Plot Bias between Model 2 and Observation
-    contour6 = plot_function(axes[2,1 ], bias2_annual_data, lon_name, lat_name, bias_levels, bias_cmap,
+    contour6 = plot_function(axes[2, 1], bias2_annual_data, lon_name, lat_name, bias_levels, bias_cmap,
                              lat_min, lat_max, lon_min, lon_max, "Bias (CMIP6 - Obs)")
     fig.colorbar(contour6, ax=axes[2, 1], orientation='horizontal', pad=0.1, fraction=0.05, shrink=0.8)
 
     # Save plot
-    output_file = os.path.join(output_dir, f"{var}_annual_comparison_with_model2_{projection}.png")
+    output_file = os.path.join(output_dir, f"{var}_annual_comparison_with_model2_{projection}.pdf")
 
 else:
     # Create a 1x3 grid for plotting when Model 2 data is absent
@@ -220,7 +213,7 @@ else:
 
     # Plot Bias between Model 1 and Observation
     contour3 = plot_function(axes[2], bias1_annual_data, lon_name, lat_name, bias_levels, bias_cmap,
-                             lat_min, lat_max, lon_min, lon_max, "Bias (CMIP7 - Obs)")
+                             lat_min, lat_max, lon_min, lon_max, "Bias (Model 1 - Obs)")
     fig.colorbar(contour3, ax=axes[2], orientation='horizontal', pad=0.1, fraction=0.05, shrink=0.8)
 
     # Save plot

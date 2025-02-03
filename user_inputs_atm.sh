@@ -1,18 +1,27 @@
 #!/bin/bash
-# User inputs for IITM_ESM diagnostic wrapper script
-# Last updated: November 2024
+# ==============================================================================
+# Copyright (C) 2025 Centre for Climate Change Research (CCCR), IITM
+#
+# This script is part of the CCCR IITM_ESM diagnostics system.
+#
+# Author: [Pritam Das Mahapatra]
+# Date: January 2025
+# ==============================================================================
+
+
+
 
 # Diagnostic settings
 diagnostic_type="climate_analysis"  # Example: "climate_analysis" or "model_comparison"
 component_type="ATM"                # Component type: "ATM" (Atmosphere), "OCN" (Ocean), "ICE" (Ice)
 
 # Variables to process (comma-separated lists for pressure-level and non-pressure-level variables)
-plev_variables="slp"   #ua,va,ta,slp,hght       # Variables that require pressure-level data (e.g., "tas,ua,va")
-no_plev_variables="tas,pr" #tas,pr,rsdt,rlut,rsut         # Variables without pressure-level data (e.g., "pr,psl")
+plev_variables="ua,va,ta,slp,hght"   #ua,va,ta,slp,hght       # Variables that require pressure-level data (e.g., "tas,ua,va")
+no_plev_variables="tas,pr,rsdt,rlut,rsut,evspsbl" #tas,pr,rsdt,rlut,rsut,evspsbl         # Variables without pressure-level data (e.g., "pr,psl")
 
 # Output directory for all generated files
 plot_dir="/home/iitm/IITM_ESM_WRAPPER/OUTPUT"  # Specify where output files should be saved
-plot_var="slp,tas,pr"
+plot_var="tas,pr,rsdt,rlut,rsut,evspsbl,ua,va,ta,slp,hght"
 # Model 1 data settings
 netcdf_dir_model1="/media/iitm/TOSHIBA_PRITAM/CMIP7-2390-2442/ATM"  # Directory containing Model 1 data files
 start_year_model1=2391             # Start year for Model 1 data

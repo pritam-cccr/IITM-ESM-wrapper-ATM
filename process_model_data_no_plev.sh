@@ -2,7 +2,14 @@
 # Script for processing model data without pressure levels (no_plev) for multiple variables,
 # including annual and seasonal mean calculations.
 
-# Check if at least 6 arguments are provided
+# ==============================================================================
+# Copyright (C) 2025 Centre for Climate Change Research (CCCR), IITM
+#
+# This script is part of the CCCR IITM_ESM diagnostics system.
+#
+# Author: [Pritam Das Mahapatra]
+# Date: January 2025
+# ==============================================================================
 if [ "$#" -lt 6 ]; then
     echo "Usage: $0 <variable1 variable2 ...> <season> <netcdf_dir> <start_year> <end_year> <output_prefix>"
     exit 1

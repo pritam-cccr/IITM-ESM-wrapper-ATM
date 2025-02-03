@@ -1,3 +1,16 @@
+; ==============================================================================
+;  Copyright (C) 2025 Centre for Climate Change Research (CCCR), IITM
+;
+;  This script is part of the CCCR IITM_ESM diagnostics system.
+;
+;  Author: Pritam Das Mahapatra
+;  Date: January 2025
+;  Version: 1.0
+;  Usage:
+;  This script should be executed within an NCL environment and assumes 
+;  required NetCDF files are available.
+;
+; ==============================================================================
 ; Load necessary libraries
 load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/gsn_code.ncl"
 load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/gsn_csm.ncl"

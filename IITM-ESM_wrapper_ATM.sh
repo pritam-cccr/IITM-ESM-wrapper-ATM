@@ -1,11 +1,13 @@
 #!/bin/bash
-# DESCRIPTION: Wrapper script for IITM_ESM diagnostics with optional model comparison
-# Last updated: January 2025
-# Author: [Pritam Das Mahapatra]  
-# Copyright (C) 2025 CCCR, IITM. All rights reserved.
+# ==============================================================================
+# Copyright (C) 2025 Centre for Climate Change Research (CCCR), IITM
+#
+# This script is part of the CCCR IITM_ESM diagnostics system.
+#
+# Author: [Pritam Das Mahapatra]
+# Date: January 2025
+# ==============================================================================
 
-
-######################################### USER INPUT SECTION ##########################################
 
 # Check if the user input file exists
 if [[ ! -f "user_inputs_atm.sh" ]]; then
@@ -205,16 +207,20 @@ read -r user_input
 if [[ "$user_input" == "y" || "$user_input" == "Y" ]]; then
     echo "Deleting all processed files..."
 
-    # Remove intermediate and final processed NetCDF files
-    rm -f "$output_dir"/*.nc
-    rm -f "$output_dir"/*.nc
-    rm -rf *.nc
+    # Safely remove all NetCDF files except IMDIA_mask.nc in output directory
+    find "$output_dir" -type f -name "*.nc" ! -name "IMDIA_mask.nc" -exec rm -f {} +
+
+    # Also remove temporary NetCDF files in the current directory
+    find . -maxdepth 1 -type f -name "*.nc" ! -name "IMDIA_mask.nc" -exec rm -f {} +
+
+    # Remove additional temporary files
     rm -f temp_var_*.nc merged_*.nc annual_mean_*.nc 2>/dev/null || true
 
-    echo "All processed files deleted from $output_dir."
+    echo "All processed files (except IMDIA_mask.nc) deleted from $output_dir."
 else
     echo "Cleanup skipped. Processed files are retained in $output_dir."
 fi
+
 ######################################### CREATE HTML ##########################################
 
 echo "Generating HTML file with plot previews..."
