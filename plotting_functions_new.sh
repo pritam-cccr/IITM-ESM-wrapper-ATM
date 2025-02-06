@@ -265,17 +265,34 @@ echo "This part will be skipped."
 
 
 #==============================================
+#==============================================
 # Check if "tas" is in the variable list (ensure the function exists)
 if is_variable_in_list "tas"; then
     echo "Processing TAS..."
 
-    # Run fldmean calculations in parallel
-    cdo fldmean "${model1_prefix}_tas_annual_all_year_no_plev.nc" "${model1_prefix}_tas_all_year_fldmean_no_plev.nc" &
-    cdo fldmean "${model2_prefix}_tas_annual_all_year_no_plev.nc" "${model2_prefix}_tas_all_year_fldmean_no_plev.nc" &
-    cdo fldmean "${output_dir}/obs_t2m_all_years.nc" "${output_dir}/obs_t2m_all_years_fldmean.nc" &
+    # Run fldmean calculations in parallel only if the output file does not exist
+    if [ ! -f "${model1_prefix}_tas_all_year_fldmean_no_plev.nc" ]; then
+        cdo fldmean "${model1_prefix}_tas_annual_all_year_no_plev.nc" "${model1_prefix}_tas_all_year_fldmean_no_plev.nc" &
+    else
+        echo "Skipping Model 1 fldmean: Output file already exists."
+    fi
 
-    # Wait for all CDO operations to finish before proceeding
+    if [ ! -f "${model2_prefix}_tas_all_year_fldmean_no_plev.nc" ]; then
+        cdo fldmean "${model2_prefix}_tas_annual_all_year_no_plev.nc" "${model2_prefix}_tas_all_year_fldmean_no_plev.nc" &
+    else
+        echo "Skipping Model 2 fldmean: Output file already exists."
+    fi
+
+    if [ ! -f "${output_dir}/obs_t2m_all_years_fldmean.nc" ]; then
+        cdo fldmean "${output_dir}/obs_t2m_all_years.nc" "${output_dir}/obs_t2m_all_years_fldmean.nc" &
+    else
+        echo "Skipping Observation fldmean: Output file already exists."
+    fi
+
+    # Wait for background processes to complete before moving to the next step
     wait
+
+    echo "Fldmean calculations for TAS completed."
 
     # Call specialized plot function for TAS
     suffix="_no_plev"

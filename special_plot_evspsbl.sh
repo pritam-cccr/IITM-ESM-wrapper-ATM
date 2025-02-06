@@ -236,7 +236,7 @@ check_error "Generating plots for evspsbl Annual"
 echo "Generating plots for evspsbl Seasonal..."
 if [ -n "$model2_season_regridded" ]; then
     python3 evspsbl_plotting_script_season.py "$model1_season_mm" "$model2_season_mm" \
-    "$obs_annual_mm" "$season_bias_model1_obs" "$season_bias_model2_obs" \
+    "$obs_season_mm" "$season_bias_model1_obs" "$season_bias_model2_obs" \
     "$season_bias_model1_model2" "evspsbl" "e" "$output_dir" "$projection" "$lat_range" \
     "$lon_range" "$season"
 else

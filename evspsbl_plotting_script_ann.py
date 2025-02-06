@@ -132,7 +132,7 @@ lon_name = "lon" if "lon" in model1_annual_data.coords else "longitude"
 lat_name = "lat" if "lat" in model1_annual_data.coords else "latitude"
 
 # Define levels
-mean_levels = create_levels(-10, 10)  # Adjust range for temperature data
+mean_levels = create_levels(0, 15)  # Adjust range for temperature data
 bias_levels = create_levelsB(-8, 8)  # Adjust for bias range
 
 
@@ -195,7 +195,7 @@ if model2_annual_data is not None:
     fig.colorbar(contour6, ax=axes[2, 1], orientation='horizontal', pad=0.1, fraction=0.05, shrink=0.8)
 
     # Save plot
-    output_file = os.path.join(output_dir, f"{var}_annual_comparison_with_model2_{projection}.pdf")
+    output_file = os.path.join(output_dir, f"{var}_annual_comparison_with_model2_{projection}.png")
 
 else:
     # Create a 1x3 grid for plotting when Model 2 data is absent
