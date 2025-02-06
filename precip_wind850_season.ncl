@@ -143,7 +143,7 @@ bias_obs_model2_pr_data = bias_obs_model2_pr_file->pr(0,:,:)
     ; Define output workspace
     pltDir = "./plots_ua_va/"
     pltName = "precip_Wind_850hPa_mean_bias_season"
-    pltType = "pdf"
+    pltType = "png"
     pltPath = pltDir + pltName
     wks = gsn_open_wks(pltType, pltPath)
 
@@ -270,7 +270,7 @@ end if
     resP@gsnPanelLeft   = 0.005
     resP@gsnPanelBottom = 0.05 
     ;resP@gsnPanelSave   = True      ; Save the state of the paneled plots so we can
-    resP@gsnPanelMainString = "850 hPa Wind with wind speed contour"
+    resP@gsnPanelMainString = "850 hPa Wind with Precipitation"
 
     ; Draw panel
     gsn_panel(wks, plot, (/nrow, ncol/), resP)

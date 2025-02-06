@@ -260,7 +260,7 @@ if "model2" in processed_data and processed_data["model2"] is not None:
         axes[2, 1].remove()
 
     # Save plot
-    output_file = os.path.join(output_dir, f"{var}_season_comparison_with_model2_{projection}.pdf")
+    output_file = os.path.join(output_dir, f"{var}_season_comparison_with_model2_{projection}_600-200hPa.png")
 
 else:
     # Create a 1x3 grid for plotting when Model 2 data is absent

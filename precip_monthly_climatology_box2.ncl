@@ -21,7 +21,7 @@ begin
     ;========================================================
     base_dir = "./output_data/"
     pltDir   =  "./plots_pr/"
-    pltName  = "precip_monthly_climatology_68E–90E_14–28N_"
+    pltName  = "precip_monthly_climatology_Central_India"
     pltPath  = pltDir + pltName
 
     model1_file = base_dir + "model1_pr_annual_all_year_no_plev.nc"

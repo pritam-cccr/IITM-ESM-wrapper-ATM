@@ -88,7 +88,7 @@ copy_VarCoords(model11, toa_net_cer)
 ; Define output workspace
     pltDir = "./bias_radiation_ann/"
     pltName = "TOA_NetDownward_Rad_bias_ann"
-    pltType = "pdf"
+    pltType = "png"
     pltPath = pltDir + pltName
     wks = gsn_open_wks(pltType, pltPath)
     
@@ -126,14 +126,14 @@ res@lbLabelBarOn = False
     res@pmLabelBarWidthF = 0.8 ;* (lon_max - lon_min) / 360.0
     
 res_mean = res
-    res_mean@cnFillPalette = "temp_diff_18lev"
+    res_mean@cnFillPalette = "cmocean_delta"
     res_mean@cnLevelSelectionMode = "ManualLevels"
     res_mean@cnMinLevelValF = -160.0
     res_mean@cnMaxLevelValF = 160.0
     res_mean@cnLevelSpacingF = 20.0
 
     res_bias = res
-    res_bias@cnFillPalette = "cmocean_delta"
+    res_bias@cnFillPalette = "temp_diff_18lev"
     res_bias@cnLevelSelectionMode = "ManualLevels"
     res_bias@cnMinLevelValF = -80.0
     res_bias@cnMaxLevelValF = 80.0

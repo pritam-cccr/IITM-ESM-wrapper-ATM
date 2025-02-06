@@ -97,7 +97,7 @@ time_indices_model1 = ispan(0, ntime_model1 - 1, 1)     ; Create indices for Mod
     pltPath = pltDir + pltName
 
     ; Open graphics workstation
-    wks = gsn_open_wks("pdf", pltPath)
+    wks = gsn_open_wks("png", pltPath)
 
     ;========================================================
 ;========================================================
@@ -188,7 +188,6 @@ resP@gsnPanelMainFontHeightF = 0.02   ; Adjust font size (default is larger)
 resP@gsnPanelScalePlotIndex = 0  ; Scale all plots to match the first plot
 gsn_panel(wks, (/plot1, plot_model2/), (/2, 1/), resP)
 
-; Finalize the plot
-frame(wks)
+
 
 end
