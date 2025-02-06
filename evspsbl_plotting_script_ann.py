@@ -133,7 +133,7 @@ lat_name = "lat" if "lat" in model1_annual_data.coords else "latitude"
 
 # Define levels
 mean_levels = create_levels(0, 15)  # Adjust range for temperature data
-bias_levels = create_levelsB(-8, 8)  # Adjust for bias range
+bias_levels = create_levelsB(-5, 5)  # Adjust for bias range
 
 
 
