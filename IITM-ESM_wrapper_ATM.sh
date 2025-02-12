@@ -208,15 +208,15 @@ if [[ "$user_input" == "y" || "$user_input" == "Y" ]]; then
     echo "Deleting all processed files..."
 
     # Safely remove all NetCDF files except IMDIA_mask.nc in output directory
-    find "$output_dir" -type f -name "*.nc" ! -name "IMDIA_mask.nc" -exec rm -f {} +
+    find "$output_dir" -type f -name "*.nc" ! -name "INDIA_mask.nc" -exec rm -f {} +
 
     # Also remove temporary NetCDF files in the current directory
-    find . -maxdepth 1 -type f -name "*.nc" ! -name "IMDIA_mask.nc" -exec rm -f {} +
+    find . -maxdepth 1 -type f -name "*.nc" ! -name "INDIA_mask.nc" -exec rm -f {} +
 
     # Remove additional temporary files
     rm -f temp_var_*.nc merged_*.nc annual_mean_*.nc 2>/dev/null || true
 
-    echo "All processed files (except IMDIA_mask.nc) deleted from $output_dir."
+    echo "All processed files (except INDIA_mask.nc) deleted from $output_dir."
 else
     echo "Cleanup skipped. Processed files are retained in $output_dir."
 fi
